@@ -218,33 +218,24 @@
       });
     });
 
-    // ----- Universal QR generation button -----
-    function triggerGenerateQR() {
-      const text = textInput.value.trim();
-      if (!text) {
-        if (tg?.showAlert) tg.showAlert(translations[lang].errorEmpty);
-        else alert(translations[lang].errorEmpty);
-        return;
-      }
-      if (text.length > 2953) {
-        if (tg?.showAlert) tg.showAlert(translations[lang].errorTooLong);
-        else alert(translations[lang].errorTooLong);
-        return;
-      }
-      generateQRCode(text);
-      textInput.blur();
-    }
-    generateBtn.addEventListener('click', triggerGenerateQR);
+   function isTelegramWebApp() {
+  // Проверяет: реально ли запущено в Telegram, а не просто есть объект Telegram
+  return typeof Telegram !== "undefined" &&
+         Telegram.WebApp &&
+         Telegram.WebApp.initData &&
+         Telegram.WebApp.platform !== "unknown";
+}
 
-    // Telegram MainButton vs Web Button
-    if (tg?.MainButton) {
-      generateBtn.style.display = 'none';
-      tg.MainButton.setText(translations[lang].generate);
-      tg.MainButton.show();
-      tg.MainButton.onClick(triggerGenerateQR);
-    } else {
-      generateBtn.style.display = 'block';
-    }
+// Управляем видимостью кнопок
+if (isTelegramWebApp() && tg?.MainButton) {
+  generateBtn.style.display = 'none';
+  tg.MainButton.setText(translations[lang].generate);
+  tg.MainButton.show();
+  tg.MainButton.onClick(triggerGenerateQR);
+} else {
+  generateBtn.style.display = 'block';
+}
+
 
     // QR GENERATOR
     let currentQR = null;
@@ -407,4 +398,5 @@
 </script>
 </body>
 </html>
+
 
