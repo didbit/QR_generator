@@ -214,7 +214,6 @@
             white-space: pre-wrap;
         }
 
-        /* Уведомления в веб-версии */
         .web-notification {
             position: fixed;
             bottom: 20px;
@@ -264,7 +263,7 @@
                 </div>
                 <input type="file" id="qr-input-file" accept="image/*" style="display:none;">
                 <div id="scanner-container" style="display:none; margin-top:20px; position:relative;">
-                    <button class="camera-switch" id="camera-switch-btn">🔄</button>
+                    <button class="camera-switch" id="camera-switch-btn" aria-label="Switch camera" title="Switch camera">🔄</button>
                     <div id="qr-reader"></div>
                 </div>
                 <div class="scanner-status" id="scanner-status" style="display:none; text-align:center; margin-top:20px;">
@@ -316,7 +315,10 @@
         errorGen: 'Ошибка генерации QR-кода',
         cameraDenied: 'Доступ к камере запрещён. Разрешите в настройках браузера.',
         cameraNotFound: 'Камера не найдена на устройстве.',
-        saveFailed: 'Ошибка при сохранении'
+        saveFailed: 'Ошибка при сохранении',
+        openLink: 'Открыть ссылку',
+        call: 'Позвонить',
+        email: 'Написать E-mail'
       },
       en: {
         generate: 'Generate QR code',
@@ -342,11 +344,13 @@
         errorGen: 'QR code generation error',
         cameraDenied: 'Camera access denied. Allow in browser settings.',
         cameraNotFound: 'Camera not found on device.',
-        saveFailed: 'Save failed'
+        saveFailed: 'Save failed',
+        openLink: 'Open Link',
+        call: 'Call',
+        email: 'Send E-mail'
       }
     };
 
-    // Определяем язык
     let lang = 'en';
     if (window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code && translations[window.Telegram.WebApp.initDataUnsafe.user.language_code]) {
       lang = window.Telegram.WebApp.initDataUnsafe.user.language_code;
@@ -354,8 +358,15 @@
       lang = navigator.language.slice(0,2);
     }
 
-    // DOM-элементы
+    // Инициализация Telegram WebApp
     const tg = window.Telegram?.WebApp || null;
+    if (tg) {
+        tg.ready(); // ← Вызываем сразу!
+        tg.expand();
+        tg.setHeaderColor('bg_color');
+    }
+
+    // DOM
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
     const textInput = document.getElementById('text-input');
@@ -379,7 +390,7 @@
     const qrInputFile = document.getElementById('qr-input-file');
     const scanResultTitle = document.getElementById('scan-result-title');
 
-    // Установка текстов
+    // Тексты
     document.querySelector('h3').textContent = '🔒 QR Generator & Scanner';
     document.querySelector('.description').textContent = translations[lang].placeholder;
     textInput.placeholder = translations[lang].placeholder;
@@ -395,11 +406,10 @@
     tabs[0].textContent = lang === 'ru' ? '✏️ Генератор' : '✏️ Generator';
     tabs[1].textContent = lang === 'ru' ? '📷 Сканер' : '📷 Scanner';
 
-    // ===== Вспомогательные функции =====
+    // Вспомогательные функции
     function showNotification(message) {
       if (tg?.showAlert) {
         tg.showAlert(message);
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
       } else {
         const notification = document.createElement('div');
         notification.className = 'web-notification';
@@ -411,28 +421,17 @@
       }
     }
 
-    // ===== Управление вкладками =====
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        const tabName = tab.dataset.tab;
-        tabs.forEach(t => t.classList.remove('active'));
-        tabContents.forEach(c => c.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(tabName).classList.add('active');
-        if (tabName === 'generator' && isScanning) stopScanning();
-        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-      });
-    });
-
-    // ===== Проверка, запущено ли в Telegram =====
-    function isTelegramWebApp() {
-      return typeof Telegram !== "undefined" &&
-             Telegram.WebApp &&
-             Telegram.WebApp.initData &&
-             Telegram.WebApp.platform !== "unknown";
+    function createSmartButton(text, onClick) {
+        const btn = document.createElement('button');
+        btn.id = 'smart-action-btn';
+        btn.className = 'btn btn-primary';
+        btn.textContent = text;
+        btn.style.marginBottom = '10px';
+        btn.onclick = onClick;
+        return btn;
     }
 
-    // ===== Генерация QR =====
+    // ===== Генерация =====
     let currentCanvas = null;
 
     function triggerGenerateQR() {
@@ -477,204 +476,274 @@
       }
     }
 
-    // ===== Сохранение QR =====
-    downloadBtn.addEventListener('click', () => {
-      if (!currentCanvas) return;
-      try {
-        if (currentCanvas.toBlob) {
-          currentCanvas.toBlob((blob) => {
+    // ===== Shared Save (Web Share API + fallback) =====
+    downloadBtn.addEventListener('click', async () => {
+        if (!currentCanvas) return;
+
+        currentCanvas.toBlob(async (blob) => {
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const fileName = `qrcode_${timestamp}.png`;
+            const file = new File([blob], fileName, { type: 'image/png' });
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'QR Code',
+                        text: textInput.value.trim().substring(0, 100)
+                    });
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.warn('Share failed, falling back to download', error);
+                        fallbackDownload(blob, fileName);
+                    }
+                }
+            } else {
+                fallbackDownload(blob, fileName);
+            }
+        }, 'image/png');
+    });
+
+    function fallbackDownload(blob, fileName) {
+        try {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            const timestamp = new Date().toISOString().slice(0, 10);
-            link.download = `qrcode_${timestamp}.png`;
+            link.download = fileName;
             link.href = url;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             setTimeout(() => URL.revokeObjectURL(url), 100);
             showNotification(translations[lang].saved);
-          }, 'image/png');
-        } else {
-          const url = currentCanvas.toDataURL('image/png');
-          const link = document.createElement('a');
-          const timestamp = new Date().toISOString().slice(0, 10);
-          link.download = `qrcode_${timestamp}.png`;
-          link.href = url;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          showNotification(translations[lang].saved);
+        } catch (error) {
+            console.error('Download fallback failed:', error);
+            showNotification(translations[lang].saveFailed);
         }
-      } catch (error) {
-        console.error('Save error:', error);
-        showNotification(translations[lang].saveFailed);
-      }
-    });
-
-    // ===== Управление кнопками (Telegram vs веб) =====
-    if (isTelegramWebApp() && tg?.MainButton) {
-      tg.ready();
-      tg.expand();
-      tg.setHeaderColor('bg_color');
-      generateBtn.style.display = 'none';
-      tg.MainButton.setText(translations[lang].generate);
-      tg.MainButton.show();
-      tg.MainButton.disable();
-      
-      textInput.addEventListener('input', () => {
-        const text = textInput.value.trim();
-        if (text.length > 0) {
-          tg.MainButton.enable();
-        } else {
-          tg.MainButton.disable();
-        }
-      });
-      
-      tg.MainButton.onClick(triggerGenerateQR);
-      
-      if (tg.BackButton) {
-        tg.BackButton.onClick(() => {
-          if (document.querySelector('#scanner').classList.contains('active') && isScanning) {
-            stopScanning();
-          } else {
-            tabs[0].click();
-          }
-        });
-      }
-    } else {
-      generateBtn.style.display = 'block';
-      generateBtn.addEventListener('click', triggerGenerateQR);
-      textInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          triggerGenerateQR();
-        }
-      });
     }
 
-    // ===== Сканирование QR =====
+    // ===== Сканирование =====
     let html5QrCode = null;
     let currentFacingMode = 'environment';
     let isScanning = false;
 
     function onScanSuccess(decodedText) {
-      stopScanning();
-      scanResultText.textContent = decodedText;
-      scanResultContainer.style.display = 'block';
-      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-      setTimeout(() => {
-        scanResultContainer.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+        stopScanning();
+        scanResultText.textContent = decodedText;
+        scanResultContainer.style.display = 'block';
+        
+        // --- Умный анализ ---
+        const oldSmartBtn = document.getElementById('smart-action-btn');
+        if (oldSmartBtn) oldSmartBtn.remove();
+
+        let smartBtn = null;
+        if (/^https?:\/\//i.test(decodedText)) {
+            smartBtn = createSmartButton('🌐 ' + translations[lang].openLink, () => {
+                if (tg) tg.openLink(decodedText);
+                else window.open(decodedText, '_blank');
+            });
+        } else if (decodedText.startsWith('tel:')) {
+            smartBtn = createSmartButton('📞 ' + translations[lang].call, () => {
+                if (tg) tg.openTelegramLink(decodedText);
+                else window.location.href = decodedText;
+            });
+        } else if (decodedText.startsWith('mailto:')) {
+            smartBtn = createSmartButton('✉️ ' + translations[lang].email, () => {
+                window.location.href = decodedText;
+            });
+        }
+        if (smartBtn) {
+            useResultBtn.parentNode.prepend(smartBtn);
+        }
+        // --- Конец анализа ---
+
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        setTimeout(() => {
+            scanResultContainer.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
     }
 
     async function startScanning() {
-      try {
-        scannerContainer.style.display = 'block';
-        scannerStatus.style.display = 'block';
-        statusText.textContent = translations[lang].scanningStatus;
-        stopScanBtn.style.display = 'block';
-        startScanBtn.style.display = 'none';
-        uploadScanBtn.style.display = 'none';
-        scanResultContainer.style.display = 'none';
+        try {
+            scannerContainer.style.display = 'block';
+            scannerStatus.style.display = 'block';
+            statusText.textContent = translations[lang].scanningStatus;
+            stopScanBtn.style.display = 'block';
+            startScanBtn.style.display = 'none';
+            uploadScanBtn.style.display = 'none';
+            scanResultContainer.style.display = 'none';
 
-        html5QrCode = new Html5Qrcode("qr-reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        const constraints = { facingMode: currentFacingMode };
-        await html5QrCode.start(constraints, config, onScanSuccess, () => {});
-        isScanning = true;
-        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-      } catch (error) {
-        let errorMsg = translations[lang].errorGen;
-        if (error.name === 'NotAllowedError') errorMsg = translations[lang].cameraDenied;
-        else if (error.name === 'NotFoundError') errorMsg = translations[lang].cameraNotFound;
-        showNotification(errorMsg);
-        resetScannerUI();
-      }
+            html5QrCode = new Html5Qrcode("qr-reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            const constraints = { facingMode: currentFacingMode };
+            await html5QrCode.start(constraints, config, onScanSuccess, () => {});
+            isScanning = true;
+
+            // Обновляем MainButton
+            if (tg?.MainButton) {
+                tg.MainButton.setText(translations[lang].stopScan);
+                tg.MainButton.onClick(stopScanning);
+                tg.MainButton.show();
+            }
+
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        } catch (error) {
+            let errorMsg = translations[lang].errorGen;
+            if (error.name === 'NotAllowedError') errorMsg = translations[lang].cameraDenied;
+            else if (error.name === 'NotFoundError') errorMsg = translations[lang].cameraNotFound;
+            showNotification(errorMsg);
+            resetScannerUI();
+        }
     }
 
     async function stopScanning() {
-      if (html5QrCode && isScanning) {
-        try {
-          await html5QrCode.stop();
-          html5QrCode.clear();
-        } catch (e) {}
-      }
-      isScanning = false;
-      resetScannerUI();
+        if (html5QrCode && isScanning) {
+            try {
+                await html5QrCode.stop();
+                html5QrCode.clear();
+            } catch (e) {}
+        }
+        isScanning = false;
+        resetScannerUI();
+
+        // Обновляем MainButton
+        if (tg?.MainButton && document.querySelector('#scanner').classList.contains('active')) {
+            tg.MainButton.hide();
+        }
     }
 
     function resetScannerUI() {
-      scannerContainer.style.display = 'none';
-      scannerStatus.style.display = 'none';
-      stopScanBtn.style.display = 'none';
-      startScanBtn.style.display = 'block';
-      uploadScanBtn.style.display = 'block';
+        scannerContainer.style.display = 'none';
+        scannerStatus.style.display = 'none';
+        stopScanBtn.style.display = 'none';
+        startScanBtn.style.display = 'block';
+        uploadScanBtn.style.display = 'block';
     }
 
     async function switchCamera() {
-      currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-      if (isScanning) {
-        await stopScanning();
-        await startScanning();
-      }
-      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        if (isScanning) {
+            await stopScanning();
+            await startScanning();
+        }
+        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 
     async function scanFromFile(file) {
-      try {
-        scannerStatus.style.display = 'block';
-        statusText.textContent = translations[lang].analysis;
-        html5QrCode = new Html5Qrcode("qr-reader");
-        const result = await html5QrCode.scanFile(file, true);
-        onScanSuccess(result);
-      } catch (error) {
-        showNotification(translations[lang].notFound);
-        scannerStatus.style.display = 'none';
-      }
+        try {
+            scannerStatus.style.display = 'block';
+            statusText.textContent = translations[lang].analysis;
+            html5QrCode = new Html5Qrcode("qr-reader");
+            const result = await html5QrCode.scanFile(file, true);
+            onScanSuccess(result);
+        } catch (error) {
+            showNotification(translations[lang].notFound);
+            scannerStatus.style.display = 'none';
+        }
     }
 
-    // Обработчики событий сканера
+    // Обработчики сканера
     startScanBtn.addEventListener('click', startScanning);
     stopScanBtn.addEventListener('click', stopScanning);
     cameraSwitchBtn.addEventListener('click', switchCamera);
     uploadScanBtn.addEventListener('click', () => { qrInputFile.click(); });
     qrInputFile.addEventListener('change', (e) => {
-      const file = e.target.files?.[0];
-      if (file) scanFromFile(file);
-      qrInputFile.value = '';
+        const file = e.target.files?.[0];
+        if (file) scanFromFile(file);
+        qrInputFile.value = '';
     });
 
     copyResultBtn.addEventListener('click', () => {
-      const text = scanResultText.textContent;
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => {
-          showNotification(translations[lang].copied);
-        });
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        showNotification(translations[lang].copied);
-      }
+        const text = scanResultText.textContent;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification(translations[lang].copied);
+            });
+        } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showNotification(translations[lang].copied);
+        }
     });
 
     useResultBtn.addEventListener('click', () => {
-      const text = scanResultText.textContent;
-      tabs[0].click();
-      textInput.value = text;
-      triggerGenerateQR();
+        const text = scanResultText.textContent;
+        tabs[0].click();
+        textInput.value = text;
+        triggerGenerateQR();
     });
 
     scanAgainBtn.addEventListener('click', () => {
-      scanResultContainer.style.display = 'none';
-      startScanning();
+        scanResultContainer.style.display = 'none';
+        startScanning();
     });
 
+    // ===== Управление вкладками и MainButton =====
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            if (tg?.MainButton) {
+                tg.MainButton.offClick(triggerGenerateQR);
+                tg.MainButton.offClick(stopScanning);
+
+                if (tabName === 'generator') {
+                    tg.MainButton.setText(translations[lang].generate);
+                    tg.MainButton.onClick(triggerGenerateQR);
+                    tg.MainButton.show();
+                    // Обновляем состояние кнопки
+                    const hasText = textInput.value.trim().length > 0;
+                    if (hasText) tg.MainButton.enable();
+                    else tg.MainButton.disable();
+                } else if (tabName === 'scanner') {
+                    if (isScanning) {
+                        tg.MainButton.setText(translations[lang].stopScan);
+                        tg.MainButton.onClick(stopScanning);
+                        tg.MainButton.show();
+                    } else {
+                        tg.MainButton.hide();
+                    }
+                }
+            }
+
+            if (tabName === 'generator' && isScanning) stopScanning();
+            // Убрали haptic на переключение вкладок
+        });
+    });
+
+    // Обновление состояния MainButton при вводе
+    if (tg?.MainButton) {
+        textInput.addEventListener('input', () => {
+            const text = textInput.value.trim();
+            if (text.length > 0) {
+                tg.MainButton.enable();
+            } else {
+                tg.MainButton.disable();
+            }
+        });
+    }
+
+    // Для веб-версии
+    if (!tg) {
+        generateBtn.style.display = 'block';
+        generateBtn.addEventListener('click', triggerGenerateQR);
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                triggerGenerateQR();
+            }
+        });
+    }
+
     window.addEventListener('beforeunload', () => {
-      if (isScanning) stopScanning();
+        if (isScanning) stopScanning();
     });
 </script>
 </body>
