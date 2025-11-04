@@ -60,5 +60,7 @@ See scanning status in real time
 
 All QR code operations are processed on your device — no data is uploaded!
 
+Link to WEB version [qr-generator-1r3.pages.dev](https://qr-generator-1r3.pages.dev/)
+
 <img width="270" height="375" alt="image" src="https://github.com/user-attachments/assets/6638d2cf-cbef-4247-bfaa-12eb277e09f0" />
 
