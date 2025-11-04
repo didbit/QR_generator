@@ -14,11 +14,11 @@ Clean, modern, intuitive interface
 
 🚀 How to Use (User Steps)
 1. Start the Bot
-Search for your bot in Telegram by its username (e.g., @my_qr_scanner_bot)
+Search for your bot in Telegram by its username (e.g., @QR_gen_scan_bot)
 
 Press Start or send /start in chat
 
-Tap the menu button ("QR Generator" or similar) at the bottom-left
+Tap the menu button ("QR GENSCAN" or similar) at the bottom-left
 
 2. QR Generator Tab
 Go to the Generator tab
