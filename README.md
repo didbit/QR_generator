@@ -59,5 +59,5 @@ The app is open-source and can be verified by anyone
 See scanning status in real time
 
 All QR code operations are processed on your device — no data is uploaded!
-<img width="948" height="1250" alt="image" src="https://github.com/user-attachments/assets/6638d2cf-cbef-4247-bfaa-12eb277e09f0" />
+<img width="94" height="125" alt="image" src="https://github.com/user-attachments/assets/6638d2cf-cbef-4247-bfaa-12eb277e09f0" />
 
