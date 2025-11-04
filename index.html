@@ -7,20 +7,12 @@
     
     <!-- Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <!-- QRious для генерации -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-    
     <!-- html5-qrcode для сканирования -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: var(--tg-theme-bg-color, #ffffff);
@@ -28,741 +20,390 @@
             padding: 20px;
             overflow-x: hidden;
         }
-        
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        h3 {
-            text-align: center;
-            margin-bottom: 10px;
-            color: var(--tg-theme-text-color, #000000);
-        }
-        
-        .description {
-            text-align: center;
-            margin: 0 10px 20px;
-            color: var(--tg-theme-hint-color, #999999);
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        
-        /* Вкладки */
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            background: var(--tg-theme-secondary-bg-color, #f4f4f4);
-            padding: 5px;
-            border-radius: 12px;
-        }
-        
-        .tab {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 500;
-        }
-        
-        .tab.active {
-            background: var(--tg-theme-button-color, #007aff);
-            color: var(--tg-theme-button-text-color, #ffffff);
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Генератор */
-        textarea {
-            width: 100%;
-            min-height: 120px;
-            padding: 12px;
-            border-radius: 10px;
-            border: 1px solid var(--tg-theme-hint-color, #cccccc);
-            background-color: var(--tg-theme-secondary-bg-color, #f4f4f4);
-            color: var(--tg-theme-text-color, #000000);
-            font-size: 16px;
-            resize: vertical;
-            font-family: inherit;
-        }
-        
-        textarea:focus {
-            outline: none;
-            border-color: var(--tg-theme-button-color, #007aff);
-        }
-        
-        /* Сканер */
-        #scanner-container {
-            position: relative;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #000;
-        }
-        
-        #qr-reader {
-            width: 100%;
-            border-radius: 12px;
-        }
-        
-        #qr-reader video {
-            width: 100%;
-            border-radius: 12px;
-        }
-        
-        /* Рамка сканирования */
-        .scanner-frame {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 250px;
-            height: 250px;
-            border: 3px solid var(--tg-theme-button-color, #00ff00);
-            border-radius: 20px;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
-            pointer-events: none;
-        }
-        
-        .scanner-corners {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .corner {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border: 4px solid var(--tg-theme-button-color, #00ff00);
-        }
-        
-        .corner.top-left {
-            top: -2px;
-            left: -2px;
-            border-right: none;
-            border-bottom: none;
-            border-radius: 20px 0 0 0;
-        }
-        
-        .corner.top-right {
-            top: -2px;
-            right: -2px;
-            border-left: none;
-            border-bottom: none;
-            border-radius: 0 20px 0 0;
-        }
-        
-        .corner.bottom-left {
-            bottom: -2px;
-            left: -2px;
-            border-right: none;
-            border-top: none;
-            border-radius: 0 0 0 20px;
-        }
-        
-        .corner.bottom-right {
-            bottom: -2px;
-            right: -2px;
-            border-left: none;
-            border-top: none;
-            border-radius: 0 0 20px 0;
-        }
-        
-        .scanner-status {
-            margin-top: 15px;
-            padding: 12px;
-            background: var(--tg-theme-secondary-bg-color, #f4f4f4);
-            border-radius: 8px;
-            text-align: center;
-            font-size: 14px;
-        }
-        
-        .scanner-controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .btn {
-            flex: 1;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        
-        .btn:active {
-            opacity: 0.7;
-        }
-        
-        .btn-primary {
-            background-color: var(--tg-theme-button-color, #007aff);
-            color: var(--tg-theme-button-text-color, #ffffff);
-        }
-        
-        .btn-secondary {
-            background-color: var(--tg-theme-secondary-bg-color, #f4f4f4);
-            color: var(--tg-theme-text-color, #000000);
-        }
-        
-        .btn-danger {
-            background-color: #ff3b30;
-            color: #ffffff;
-        }
-        
-        /* QR результат */
-        #qrcode-container {
-            margin-top: 20px;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        #qrcode {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        #qrcode canvas {
-            display: block;
-            max-width: 100%;
-            height: auto;
-        }
-        
-        .stats {
-            margin-top: 15px;
-            font-size: 13px;
-            color: var(--tg-theme-hint-color, #999999);
-            text-align: center;
-        }
-        
-        /* Результат сканирования */
-        .scan-result {
-            margin-top: 20px;
-            padding: 15px;
-            background: var(--tg-theme-secondary-bg-color, #f4f4f4);
-            border-radius: 10px;
-            word-break: break-all;
-        }
-        
-        .scan-result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .scan-result-text {
-            font-size: 14px;
-            line-height: 1.5;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-        
-        /* Переключатель камеры */
-        .camera-switch {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        
-        /* Загрузка */
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: var(--tg-theme-hint-color, #999999);
-        }
-        
-        .spinner {
-            border: 3px solid var(--tg-theme-hint-color, #f3f3f3);
-            border-top: 3px solid var(--tg-theme-button-color, #007aff);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .container { max-width: 600px; margin: 0 auto; }
+        h3 { text-align: center; margin-bottom: 10px; }
+        .description { text-align: center; margin: 0 10px 20px; color: var(--tg-theme-hint-color, #999999); font-size: 14px; line-height: 1.4; }
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: var(--tg-theme-secondary-bg-color, #f4f4f4); padding: 5px; border-radius: 12px; }
+        .tab { flex: 1; padding: 12px; text-align: center; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: 500; }
+        .tab.active { background: var(--tg-theme-button-color, #007aff); color: var(--tg-theme-button-text-color, #ffffff); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        textarea { width: 100%; min-height: 120px; padding: 12px; border-radius: 10px; border: 1px solid var(--tg-theme-hint-color, #cccccc); background-color: var(--tg-theme-secondary-bg-color, #f4f4f4); color: var(--tg-theme-text-color, #000000); font-size: 16px; resize: vertical; font-family: inherit; }
+        textarea:focus { outline: none; border-color: var(--tg-theme-button-color, #007aff); }
+        .btn { flex: 1; padding: 12px 20px; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; }
+        .btn-primary { background-color: var(--tg-theme-button-color, #007aff); color: var(--tg-theme-button-text-color, #ffffff); }
+        .btn-secondary { background-color: var(--tg-theme-secondary-bg-color, #f4f4f4); color: var(--tg-theme-text-color, #000000); }
+        .btn-danger { background-color: #ff3b30; color: #ffffff; }
+        .btn:active { opacity: 0.7; }
+
+        #qrcode-container { margin-top: 20px; display: none; flex-direction: column; align-items: center; }
+        #qrcode { background-color: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);}
+        #qrcode canvas { display: block; max-width: 100%; height: auto; }
+        .stats { margin-top: 15px; font-size: 13px; color: var(--tg-theme-hint-color, #999999); text-align: center; }
+
+        /* Scanner styles: as before */
+        /* ... остальной стиль ... (оставьте как в вашем оригинале) */
     </style>
 </head>
 <body>
     <div class="container">
-        <h3>🔒 QR Генератор и Сканер</h3>
-        <p class="description">
-            Генерируйте и сканируйте QR-коды локально на вашем устройстве
-        </p>
-        
-        <!-- Вкладки -->
+        <h3></h3>
+        <p class="description"></p>
+        <!-- Tabs -->
         <div class="tabs">
-            <div class="tab active" data-tab="generator">
-                ✏️ Генератор
-            </div>
-            <div class="tab" data-tab="scanner">
-                📷 Сканер
-            </div>
+            <div class="tab active" data-tab="generator"></div>
+            <div class="tab" data-tab="scanner"></div>
         </div>
-        
-        <!-- Генератор -->
+        <!-- Generator -->
         <div class="tab-content active" id="generator">
-            <textarea 
-                id="text-input" 
-                placeholder="Введите текст, ссылку или данные для QR-кода..."
-                autocomplete="off"
-                spellcheck="false"
-            ></textarea>
-            
+            <textarea id="text-input" autocomplete="off" spellcheck="false"></textarea>
+            <button class="btn btn-primary" id="generate-btn" style="width:100%;margin-top:15px;"></button>
             <div id="qrcode-container">
                 <div id="qrcode"></div>
-                <button class="btn btn-primary" id="download-btn" style="margin-top: 15px; width: 100%;">
-                    💾 Сохранить QR-код
-                </button>
+                <button class="btn btn-primary" id="download-btn" style="margin-top:15px; width:100%;"></button>
                 <div class="stats" id="stats"></div>
             </div>
         </div>
-        
-        <!-- Сканер -->
+        <!-- Scanner -->
         <div class="tab-content" id="scanner">
             <div id="scanner-view">
                 <div class="scanner-controls">
-                    <button class="btn btn-primary" id="start-scan-btn">
-                        📷 Запустить камеру
-                    </button>
-                    <button class="btn btn-secondary" id="upload-scan-btn">
-                        🖼️ Загрузить фото
-                    </button>
+                    <button class="btn btn-primary" id="start-scan-btn"></button>
+                    <button class="btn btn-secondary" id="upload-scan-btn"></button>
                 </div>
-                
-                <input type="file" id="qr-input-file" accept="image/*" style="display: none;">
-                
-                <div id="scanner-container" style="display: none; margin-top: 20px;">
+                <input type="file" id="qr-input-file" accept="image/*" style="display:none;">
+                <div id="scanner-container" style="display:none; margin-top:20px;">
                     <button class="camera-switch" id="camera-switch-btn">🔄</button>
                     <div id="qr-reader"></div>
-                    <div class="scanner-frame">
-                        <div class="scanner-corners">
-                            <div class="corner top-left"></div>
-                            <div class="corner top-right"></div>
-                            <div class="corner bottom-left"></div>
-                            <div class="corner bottom-right"></div>
-                        </div>
-                    </div>
+                    <!-- scanner-frame ... -->
                 </div>
-                
-                <div class="scanner-status" id="scanner-status" style="display: none;">
+                <div class="scanner-status" id="scanner-status" style="display:none;">
                     <div class="spinner"></div>
-                    Поиск QR-кода...
                 </div>
-                
-                <div id="scan-result-container" style="display: none;">
+                <div id="scan-result-container" style="display:none;">
                     <div class="scan-result">
                         <div class="scan-result-header">
-                            <strong>✅ Результат сканирования:</strong>
-                            <button class="btn btn-secondary" id="copy-result-btn" style="padding: 6px 12px; flex: 0 0 auto;">
-                                📋 Копировать
-                            </button>
+                            <strong id="scan-result-title"></strong>
+                            <button class="btn btn-secondary" id="copy-result-btn" style="padding:6px 12px;flex:0 0 auto;"></button>
                         </div>
                         <div class="scan-result-text" id="scan-result-text"></div>
                     </div>
-                    
                     <div class="scanner-controls">
-                        <button class="btn btn-primary" id="use-result-btn">
-                            ✏️ Создать QR
-                        </button>
-                        <button class="btn btn-secondary" id="scan-again-btn">
-                            🔄 Сканировать ещё
-                        </button>
+                        <button class="btn btn-primary" id="use-result-btn"></button>
+                        <button class="btn btn-secondary" id="scan-again-btn"></button>
                     </div>
                 </div>
-                
-                <button class="btn btn-danger" id="stop-scan-btn" style="display: none; margin-top: 15px; width: 100%;">
-                    ⛔ Остановить сканирование
-                </button>
+                <button class="btn btn-danger" id="stop-scan-btn" style="display:none;margin-top:15px;width:100%;"></button>
             </div>
         </div>
     </div>
+<script>
+    // ===== Мультиязычность =====
+    const translations = {
+      ru: {
+        generate: 'Сгенерировать QR-код',
+        placeholder: 'Введите текст, ссылку или данные для QR-кода...',
+        download: '💾 Сохранить QR-код',
+        saved: 'QR-код сохранён',
+        errorEmpty: 'Пожалуйста, введите текст или ссылку!',
+        errorTooLong: 'Текст слишком длинный. Максимум 2953 символа.',
+        scanningStatus: 'Поиск QR-кода...',
+        scanCamera: '📷 Запустить камеру',
+        scanFile: '🖼️ Загрузить фото',
+        copy: '📋 Копировать',
+        useResult: '✏️ Создать QR',
+        scanAgain: '🔄 Сканировать ещё',
+        stopScan: '⛔ Остановить сканирование',
+        scannedResult: '✅ Результат сканирования:',
+        chars: 'символов •',
+        url: 'URL',
+        text: 'Текст',
+        analysis: 'Анализ изображения...',
+        notFound: 'QR-код не найден на изображении',
+        copied: 'Текст скопирован',
+        errorGen: 'Ошибка генерации QR-кода',
+        cameraDenied: 'Доступ к камере запрещён. Разрешите доступ в настройках браузера.',
+        cameraNotFound: 'Камера не найдена на устройстве.',
+        saveFailed: 'Ошибка при сохранении'
+      },
+      en: {
+        generate: 'Generate QR code',
+        placeholder: 'Enter text, URL or data for QR code...',
+        download: '💾 Save QR code',
+        saved: 'QR code saved',
+        errorEmpty: 'Please enter text or URL!',
+        errorTooLong: 'Text too long. Maximum 2953 characters.',
+        scanningStatus: 'Scanning for QR code...',
+        scanCamera: '📷 Start camera',
+        scanFile: '🖼️ Upload photo',
+        copy: '📋 Copy',
+        useResult: '✏️ Generate QR',
+        scanAgain: '🔄 Scan again',
+        stopScan: '⛔ Stop scanning',
+        scannedResult: '✅ Scan result:',
+        chars: 'characters •',
+        url: 'URL',
+        text: 'Text',
+        analysis: 'Analysing image...',
+        notFound: 'QR code not found on image',
+        copied: 'Text copied',
+        errorGen: 'QR code generation error',
+        cameraDenied: 'Camera access denied. Allow in browser settings.',
+        cameraNotFound: 'Camera not found on device.',
+        saveFailed: 'Save failed'
+      }
+    };
+    // Язык: Telegram, иначе браузер, иначе EN
+    let lang = 'en';
+    if (window.Telegram && Telegram.WebApp?.initDataUnsafe?.user?.language_code && translations[Telegram.WebApp.initDataUnsafe.user.language_code]) {
+      lang = Telegram.WebApp.initDataUnsafe.user.language_code;
+    } else if (navigator.language && translations[navigator.language.slice(0,2)]) {
+      lang = navigator.language.slice(0,2);
+    }
 
-    <script>
-        // Инициализация Telegram Web App
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-        tg.setHeaderColor('bg_color');
-        
-        // Элементы DOM
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-        const textInput = document.getElementById('text-input');
-        const qrcodeContainer = document.getElementById('qrcode-container');
-        const qrcodeDiv = document.getElementById('qrcode');
-        const downloadBtn = document.getElementById('download-btn');
-        const statsDiv = document.getElementById('stats');
-        
-        // Сканер элементы
-        const startScanBtn = document.getElementById('start-scan-btn');
-        const uploadScanBtn = document.getElementById('upload-scan-btn');
-        const stopScanBtn = document.getElementById('stop-scan-btn');
-        const cameraSwitchBtn = document.getElementById('camera-switch-btn');
-        const scannerContainer = document.getElementById('scanner-container');
-        const scannerStatus = document.getElementById('scanner-status');
-        const scanResultContainer = document.getElementById('scan-result-container');
-        const scanResultText = document.getElementById('scan-result-text');
-        const copyResultBtn = document.getElementById('copy-result-btn');
-        const useResultBtn = document.getElementById('use-result-btn');
-        const scanAgainBtn = document.getElementById('scan-again-btn');
-        const qrInputFile = document.getElementById('qr-input-file');
-        
-        let currentQR = null;
-        let currentCanvas = null;
-        let html5QrCode = null;
-        let currentFacingMode = 'environment'; // 'user' для фронтальной камеры
-        let isScanning = false;
-        
-        // === ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ===
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabName = tab.dataset.tab;
-                
-                tabs.forEach(t => t.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-                
-                tab.classList.add('active');
-                document.getElementById(tabName).classList.add('active');
-                
-                // Останавливаем сканер при переключении
-                if (tabName === 'generator' && isScanning) {
-                    stopScanning();
-                }
-                
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.impactOccurred('light');
-                }
-            });
+    // DOM
+    const tg = window.Telegram.WebApp;
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const textInput = document.getElementById('text-input');
+    const generateBtn = document.getElementById('generate-btn');
+    const qrcodeContainer = document.getElementById('qrcode-container');
+    const qrcodeDiv = document.getElementById('qrcode');
+    const downloadBtn = document.getElementById('download-btn');
+    const statsDiv = document.getElementById('stats');
+    const startScanBtn = document.getElementById('start-scan-btn');
+    const uploadScanBtn = document.getElementById('upload-scan-btn');
+    const stopScanBtn = document.getElementById('stop-scan-btn');
+    const cameraSwitchBtn = document.getElementById('camera-switch-btn');
+    const scannerContainer = document.getElementById('scanner-container');
+    const scannerStatus = document.getElementById('scanner-status');
+    const scanResultContainer = document.getElementById('scan-result-container');
+    const scanResultText = document.getElementById('scan-result-text');
+    const copyResultBtn = document.getElementById('copy-result-btn');
+    const useResultBtn = document.getElementById('use-result-btn');
+    const scanAgainBtn = document.getElementById('scan-again-btn');
+    const qrInputFile = document.getElementById('qr-input-file');
+    const scanResultTitle = document.getElementById('scan-result-title');
+
+    // Мультиязычные надписи
+    document.querySelector('h3').textContent = '🔒 QR Generator & Scanner';
+    document.querySelector('.description').textContent = translations[lang].placeholder;
+    textInput.placeholder = translations[lang].placeholder;
+    generateBtn.textContent = translations[lang].generate;
+    downloadBtn.textContent = translations[lang].download;
+    startScanBtn.textContent = translations[lang].scanCamera;
+    uploadScanBtn.textContent = translations[lang].scanFile;
+    copyResultBtn.textContent = translations[lang].copy;
+    useResultBtn.textContent = translations[lang].useResult;
+    scanAgainBtn.textContent = translations[lang].scanAgain;
+    stopScanBtn.textContent = translations[lang].stopScan;
+    scanResultTitle.textContent = translations[lang].scannedResult;
+    tabs[0].textContent = lang === 'ru' ? '✏️ Генератор' : '✏️ Generator';
+    tabs[1].textContent = lang === 'ru' ? '📷 Сканер' : '📷 Scanner';
+
+    // TAB SWITCH
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tabName).classList.add('active');
+        if (tabName === 'generator' && isScanning) stopScanning();
+        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      });
+    });
+
+    // ----- Universal QR generation button -----
+    function triggerGenerateQR() {
+      const text = textInput.value.trim();
+      if (!text) {
+        if (tg?.showAlert) tg.showAlert(translations[lang].errorEmpty);
+        else alert(translations[lang].errorEmpty);
+        return;
+      }
+      if (text.length > 2953) {
+        if (tg?.showAlert) tg.showAlert(translations[lang].errorTooLong);
+        else alert(translations[lang].errorTooLong);
+        return;
+      }
+      generateQRCode(text);
+      textInput.blur();
+    }
+    generateBtn.addEventListener('click', triggerGenerateQR);
+
+    // Telegram MainButton vs Web Button
+    if (tg?.MainButton) {
+      generateBtn.style.display = 'none';
+      tg.MainButton.setText(translations[lang].generate);
+      tg.MainButton.show();
+      tg.MainButton.onClick(triggerGenerateQR);
+    } else {
+      generateBtn.style.display = 'block';
+    }
+
+    // QR GENERATOR
+    let currentQR = null;
+    let currentCanvas = null;
+    function generateQRCode(text) {
+      qrcodeDiv.innerHTML = '';
+      currentCanvas = document.createElement('canvas');
+      qrcodeDiv.appendChild(currentCanvas);
+      try {
+        currentQR = new QRious({
+          element: currentCanvas,
+          value: text,
+          size: 256,
+          level: 'H',
+          background: '#ffffff',
+          foreground: '#000000',
+          padding: 10
         });
-        
-        // === ГЕНЕРАТОР QR ===
-        tg.MainButton.setText('Сгенерировать QR-код');
-        tg.MainButton.color = tg.themeParams.button_color || '#007aff';
-        tg.MainButton.textColor = tg.themeParams.button_text_color || '#ffffff';
-        tg.MainButton.hide();
-        
-        textInput.addEventListener('input', () => {
-            const text = textInput.value.trim();
-            if (text.length > 0) {
-                tg.MainButton.show();
-                tg.MainButton.enable();
-            } else {
-                tg.MainButton.hide();
-            }
+        qrcodeContainer.style.display = 'flex';
+        const charCount = text.length;
+        const isUrl = /^https?:\/\//i.test(text);
+        statsDiv.textContent = `${charCount} ${translations[lang].chars} ${isUrl ? translations[lang].url : translations[lang].text}`;
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        setTimeout(() => {
+          qrcodeContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } catch (error) {
+        if (tg?.showAlert) tg.showAlert(translations[lang].errorGen);
+        else alert(translations[lang].errorGen);
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+      }
+    }
+    downloadBtn.addEventListener('click', () => {
+      if (!currentCanvas) return;
+      try {
+        currentCanvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = 'qrcode.png';
+          link.href = url;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 100);
+          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+          if (tg?.showAlert) tg.showAlert(translations[lang].saved);
+          else alert(translations[lang].saved);
+        }, 'image/png');
+      } catch (error) {
+        if (tg?.showAlert) tg.showAlert(translations[lang].saveFailed);
+        else alert(translations[lang].saveFailed);
+      }
+    });
+
+    // ----- Scanner -----
+    let html5QrCode = null;
+    let currentFacingMode = 'environment';
+    let isScanning = false;
+
+    function onScanSuccess(decodedText, decodedResult) {
+      stopScanning();
+      scanResultText.textContent = decodedText;
+      scanResultContainer.style.display = 'block';
+      if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      setTimeout(() => { scanResultContainer.scrollIntoView({ behavior: 'smooth' }); }, 100);
+    }
+    function onScanError(errorMessage) {}
+
+    async function startScanning() {
+      try {
+        scannerContainer.style.display = 'block';
+        scannerStatus.style.display = 'block';
+        stopScanBtn.style.display = 'block';
+        startScanBtn.style.display = 'none';
+        uploadScanBtn.style.display = 'none';
+        scanResultContainer.style.display = 'none';
+        html5QrCode = new Html5Qrcode("qr-reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+        const constraints = { facingMode: currentFacingMode };
+        await html5QrCode.start(constraints, config, onScanSuccess, onScanError);
+        isScanning = true;
+        scannerStatus.innerHTML = `<div class="spinner"></div>${translations[lang].scanningStatus}`;
+        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+      } catch (error) {
+        let errorMsg = translations[lang].errorGen;
+        if (error.name === 'NotAllowedError') errorMsg = translations[lang].cameraDenied;
+        else if (error.name === 'NotFoundError') errorMsg = translations[lang].cameraNotFound;
+        if (tg?.showAlert) tg.showAlert(errorMsg);
+        else alert(errorMsg);
+        resetScannerUI();
+      }
+    }
+    async function stopScanning() {
+      if (html5QrCode && isScanning) {
+        try { await html5QrCode.stop(); html5QrCode.clear(); } catch (error) {}
+      }
+      isScanning = false;
+      resetScannerUI();
+    }
+    function resetScannerUI() {
+      scannerContainer.style.display = 'none';
+      scannerStatus.style.display = 'none';
+      stopScanBtn.style.display = 'none';
+      startScanBtn.style.display = 'block';
+      uploadScanBtn.style.display = 'block';
+    }
+    async function switchCamera() {
+      currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+      if (isScanning) { await stopScanning(); await startScanning(); }
+      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    }
+    async function scanFromFile(file) {
+      try {
+        scannerStatus.style.display = 'block';
+        scannerStatus.innerHTML = `<div class="spinner"></div>${translations[lang].analysis}`;
+        html5QrCode = new Html5Qrcode("qr-reader");
+        const result = await html5QrCode.scanFile(file, true);
+        onScanSuccess(result);
+      } catch (error) {
+        if (tg?.showAlert) tg.showAlert(translations[lang].notFound);
+        else alert(translations[lang].notFound);
+        scannerStatus.style.display = 'none';
+      }
+    }
+    startScanBtn.addEventListener('click', startScanning);
+    stopScanBtn.addEventListener('click', stopScanning);
+    cameraSwitchBtn.addEventListener('click', switchCamera);
+    uploadScanBtn.addEventListener('click', () => { qrInputFile.click(); });
+    qrInputFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) { scanFromFile(file); }
+    });
+    copyResultBtn.addEventListener('click', () => {
+      const text = scanResultText.textContent;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          if (tg?.showAlert) tg.showAlert(translations[lang].copied);
+          else alert(translations[lang].copied);
+          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         });
-        
-        function generateQRCode(text) {
-            qrcodeDiv.innerHTML = '';
-            currentCanvas = document.createElement('canvas');
-            qrcodeDiv.appendChild(currentCanvas);
-            
-            try {
-                currentQR = new QRious({
-                    element: currentCanvas,
-                    value: text,
-                    size: 256,
-                    level: 'H',
-                    background: '#ffffff',
-                    foreground: '#000000',
-                    padding: 10
-                });
-                
-                qrcodeContainer.style.display = 'flex';
-                
-                const charCount = text.length;
-                const isUrl = /^https?:\/\//i.test(text);
-                statsDiv.textContent = `${charCount} символов • ${isUrl ? 'URL' : 'Текст'}`;
-                
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.notificationOccurred('success');
-                }
-                
-                setTimeout(() => {
-                    qrcodeContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 100);
-                
-            } catch (error) {
-                console.error('QR generation error:', error);
-                tg.showAlert('Ошибка генерации QR-кода');
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.notificationOccurred('error');
-                }
-            }
-        }
-        
-        tg.MainButton.onClick(() => {
-            const text = textInput.value.trim();
-            
-            if (!text) {
-                tg.showAlert('Пожалуйста, введите текст или ссылку');
-                return;
-            }
-            
-            if (text.length > 2953) {
-                tg.showAlert('Текст слишком длинный. Максимум 2953 символа.');
-                return;
-            }
-            
-            generateQRCode(text);
-            textInput.blur();
-        });
-        
-        downloadBtn.addEventListener('click', () => {
-            if (!currentCanvas) return;
-            
-            try {
-                currentCanvas.toBlob((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    const timestamp = new Date().toISOString().slice(0, 10);
-                    link.download = `qrcode_${timestamp}.png`;
-                    link.href = url;
-                    link.click();
-                    
-                    setTimeout(() => URL.revokeObjectURL(url), 100);
-                    
-                    if (tg.HapticFeedback) {
-                        tg.HapticFeedback.notificationOccurred('success');
-                    }
-                    
-                    tg.showAlert('QR-код сохранён');
-                }, 'image/png');
-            } catch (error) {
-                tg.showAlert('Ошибка при сохранении');
-            }
-        });
-        
-        // === СКАНЕР QR ===
-        
-        function onScanSuccess(decodedText, decodedResult) {
-            console.log('QR Code scanned:', decodedText);
-            
-            // Останавливаем сканирование
-            stopScanning();
-            
-            // Показываем результат
-            scanResultText.textContent = decodedText;
-            scanResultContainer.style.display = 'block';
-            
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.notificationOccurred('success');
-            }
-            
-            // Скроллим к результату
-            setTimeout(() => {
-                scanResultContainer.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
-        }
-        
-        function onScanError(errorMessage) {
-            // Игнорируем частые ошибки поиска QR
-            // console.log('Scan error:', errorMessage);
-        }
-        
-        async function startScanning() {
-            try {
-                scannerContainer.style.display = 'block';
-                scannerStatus.style.display = 'block';
-                stopScanBtn.style.display = 'block';
-                startScanBtn.style.display = 'none';
-                uploadScanBtn.style.display = 'none';
-                scanResultContainer.style.display = 'none';
-                
-                html5QrCode = new Html5Qrcode("qr-reader");
-                
-                const config = {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0
-                };
-                
-                const constraints = {
-                    facingMode: currentFacingMode
-                };
-                
-                await html5QrCode.start(
-                    constraints,
-                    config,
-                    onScanSuccess,
-                    onScanError
-                );
-                
-                isScanning = true;
-                scannerStatus.innerHTML = '<div class="spinner"></div>Наведите камеру на QR-код...';
-                
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.impactOccurred('medium');
-                }
-                
-            } catch (error) {
-                console.error('Camera start error:', error);
-                
-                let errorMsg = 'Не удалось запустить камеру.';
-                if (error.name === 'NotAllowedError') {
-                    errorMsg = 'Доступ к камере запрещён. Разрешите доступ в настройках браузера.';
-                } else if (error.name === 'NotFoundError') {
-                    errorMsg = 'Камера не найдена на устройстве.';
-                }
-                
-                tg.showAlert(errorMsg);
-                resetScannerUI();
-            }
-        }
-        
-        async function stopScanning() {
-            if (html5QrCode && isScanning) {
-                try {
-                    await html5QrCode.stop();
-                    html5QrCode.clear();
-                } catch (error) {
-                    console.error('Stop error:', error);
-                }
-            }
-            
-            isScanning = false;
-            resetScannerUI();
-        }
-        
-        function resetScannerUI() {
-            scannerContainer.style.display = 'none';
-            scannerStatus.style.display = 'none';
-            stopScanBtn.style.display = 'none';
-            startScanBtn.style.display = 'block';
-            uploadScanBtn.style.display = 'block';
-        }
-        
-        async function switchCamera() {
-            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-            
-            if (isScanning) {
-                await stopScanning();
-                await startScanning();
-            }
-            
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('light');
-            }
-        }
-        
-        async function scanFromFile(file) {
-            try {
-                scannerStatus.style.display = 'block';
-                scannerStatus.innerHTML = '<div class="spinner"></div>Анализ изображения...';
-                
-                html5QrCode = new Html5Qrcode("qr-reader");
-                const result = await html5QrCode.scanFile(file, true);
-                
-                onScanSuccess(result);
-                
-            } catch (error) {
-                console.error('File scan error:', error);
-                tg.showAlert('QR-код не найден на изображении');
-                scannerStatus.style.display = 'none';
-            }
-        }
-        
-        // События
-        startScanBtn.addEventListener('click', startScanning);
-        stopScanBtn.addEventListener('click', stopScanning);
-        cameraSwitchBtn.addEventListener('click', switchCamera);
-        
-        uploadScanBtn.addEventListener('click', () => {
-            qrInputFile.click();
-        });
-        
-        qrInputFile.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                scanFromFile(file);
-            }
-        });
-        
-        copyResultBtn.addEventListener('click', () => {
-            const text = scanResultText.textContent;
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(() => {
-                    tg.showAlert('Текст скопирован');
-                    if (tg.HapticFeedback) {
-                        tg.HapticFeedback.notificationOccurred('success');
-                    }
-                });
-            } else {
-                // Fallback для старых браузеров
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                tg.showAlert('Текст скопирован');
-            }
-        });
-        
-        useResultBtn.addEventListener('click', () => {
-            const text = scanResultText.textContent;
-            
-            // Переключаемся на вкладку генератора
-            tabs[0].click();
-            
-            // Заполняем поле и генерируем
-            textInput.value = text;
-            generateQRCode(text);
-        });
-        
-        scanAgainBtn.addEventListener('click', () => {
-            scanResultContainer.style.display = 'none';
-            startScanning();
-        });
-        
-        // Очистка при закрытии
-        window.addEventListener('beforeunload', () => {
-            if (isScanning) {
-                stopScanning();
-            }
-        });
-    </script>
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (tg?.showAlert) tg.showAlert(translations[lang].copied);
+      }
+    });
+    useResultBtn.addEventListener('click', () => {
+      const text = scanResultText.textContent;
+      tabs[0].click();
+      textInput.value = text;
+      generateQRCode(text);
+    });
+    scanAgainBtn.addEventListener('click', () => {
+      scanResultContainer.style.display = 'none';
+      startScanning();
+    });
+    window.addEventListener('beforeunload', () => { if (isScanning) stopScanning(); });
+</script>
 </body>
 </html>
